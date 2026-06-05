@@ -128,7 +128,7 @@ resource "proxmox_virtual_environment_vm" "kali" {
     user_account {
       username = "kali"
       keys     = var.ssh_public_key != "" ? [var.ssh_public_key] : []
-      password = "LabAdmin2024!"
+      password = "XXXXXXXXXXXXXX"
     }
   }
 }
