@@ -1,12 +1,12 @@
 # range-as-code
 
-A purple team cyber range, built entirely as infrastructure-as-code on a Proxmox homelab. No turnkey tools, no black boxes — just Packer, Terraform, and Ansible doing what they do best.
+A purple team cyber range built as infrastructure-as-code on a Proxmox homelab. I built this using Packer, Terraform, and Ansible.
 
 ## What is this?
 
-This repo contains everything needed to stand up a small Active Directory environment for attack-and-defend practice. The idea is simple: build a realistic network, break into it, detect the break-in, and write rules so it gets caught next time.
+This is how I set up a small Active Directory environment for attack-and-defend practice. The idea was simple: build a realistic network, break into it, detect the break-in, and write rules so it gets caught next time.
 
-The whole thing runs on a two-node Proxmox cluster at home. One node hosts the range (red team playground), the other will eventually host the blue team stack (SIEM, network sensors, detection logic). Everything is defined in code so the range can be torn down and rebuilt from scratch in minutes.
+The whole thing runs on my two-node Proxmox cluster. One node hosts the red team playground while the other hosts the blue team stack (SIEM, network sensors, detection logic). Everything is defined in code so the range can be torn down and rebuilt from scratch in minutes.
 
 ## The Range
 
@@ -21,11 +21,14 @@ Four machines, one network:
 
 ## How it's built
 
-**Templates** — Golden images that VMs are cloned from. The Windows templates are built with [Packer](https://www.packer.io/) (unattended installs, VirtIO drivers, WinRM for automation). The Linux templates use pre-built cloud images with cloud-init.
+**Templates** — The Windows templates are built with [Packer](https://www.packer.io/) (unattended installs, VirtIO drivers, WinRM for automation). The Linux templates use pre-built cloud images with cloud-init.
 
 **Deployment** — [OpenTofu](https://opentofu.org/) (open-source Terraform) with the [bpg/proxmox](https://github.com/bpg/terraform-provider-proxmox) provider clones the templates and configures networking. One `tofu apply` and the range is up.
 
-**Configuration** — Ansible handles the post-deployment setup: AD promotion, domain join, Sysmon, log forwarding. *(work in progress)*
+**Configuration** — Ansible handles the post-deployment setup: 
+- Active Directory: Forest creation, domain join
+- Endpoint Monitoring: Sysmon on all Windows hosts
+- SIEM: Splunk on node1 with universal forwarders shipping sysmon, security, system, and application logs from DC01 and WS01
 
 ## Repo layout
 
@@ -37,8 +40,17 @@ Four machines, one network:
 │   ├── provider.tf
 │   ├── variables.tf
 │   └── main.tf
-├── scripts/                    # Cloud image template setup (Ubuntu, Kali)
-└── ansible/                    # Post-deployment config (coming soon)
+├── ansible/
+│   ├── inventory/hosts.yml     # All hosts (Windows + Linux + Blue)
+│   └── playbooks/
+│       ├── 01-promote-dc.yml        # AD forest creation
+│       ├── 02-domain-join.yml       # Join WS01 to range.lab
+│       ├── 03-deploy-sysmon.yml     # Sysmon on Windows hosts
+│       ├── 04-install-splunk.yml    # Splunk Enterprise on node1
+│       └── 05-deploy-forwarder.yml  # Universal Forwarder on Windows
+├── scripts/
+│   └── create-linux-templates.sh    # Ubuntu + Kali cloud image setup
+└── README.md
 ```
 
 ## What's working
@@ -50,21 +62,23 @@ Four machines, one network:
 - [x] Terraform deploys all four VMs from templates
 - [x] Linux VMs get static IPs and SSH access via cloud-init
 - [x] Windows VMs have WinRM enabled for Ansible
+- [x] DC01 promoted to domain controller
+- [x] WS01 joined to domain
+- [x] Sysmon deployed on DC01 and WS01
+- [x] Splunk Enterprise running on node1
+- [x] Universal Forwarder shipping logs from both Windows hosts to Splunk
+- [x] Sysmon, Security, System, and Application event logs indexed in Splunk
 
 ## What's next
 
-- [ ] Ansible: promote DC01, join WS01 to domain, deploy Sysmon
-- [ ] Blue stack on a separate node (SIEM + Suricata/Zeek)
+- [ ] Suricata network sensor on the Splunk VM
 - [ ] Detection-as-code: Sigma rules with CI/CD validation
-- [ ] Purple team loop: ATT&CK technique → attack → detect → write rule
+- [ ] Purple team loop: ATT&CK technique → attack → detect in Splunk → write rule
 - [ ] Network isolation (dedicated range bridge, controlled routing)
 
 ## Environment
 
 This runs on a two-node Proxmox VE 9.2 cluster with shared NFS storage (TrueNAS). The range VMs live on the second node so the first stays clean for the blue team stack. A small LXC container on the range node acts as the IaC workstation — Packer, OpenTofu, and Ansible all run from there.
 
-Nothing fancy hardware-wise. Just a couple of mini PCs, a gigabit switch, and a NAS.
 
-## Why not Ludus / GOAD / DetectionLab?
 
-Looked at all of them. Ludus takes over the entire host (can't run anything else on that node). GOAD is solid but it's someone else's lab — deploying it shows you can follow instructions, not that you can build infrastructure. This project is the "I built it myself" version, using the same tools (Packer, Terraform, Ansible) that real environments use.
