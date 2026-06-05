@@ -1,0 +1,21 @@
+# Secrets
+credentials.auto.pkrvars.hcl
+terraform.tfvars
+*.secret
+.env
+
+# Packer
+packer_cache/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

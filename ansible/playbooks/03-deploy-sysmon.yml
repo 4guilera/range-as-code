@@ -1,0 +1,37 @@
+---
+- name: Deploy Sysmon on Windows hosts
+  hosts: windows
+  gather_facts: no
+
+  tasks:
+    - name: Create tools directory
+      ansible.windows.win_file:
+        path: C:\Tools
+        state: directory
+
+    - name: Download Sysmon
+      ansible.windows.win_get_url:
+        url: https://download.sysinternals.com/files/Sysmon.zip
+        dest: C:\Tools\Sysmon.zip
+
+    - name: Extract Sysmon
+      community.windows.win_unzip:
+        src: C:\Tools\Sysmon.zip
+        dest: C:\Tools\Sysmon
+
+    - name: Download SwiftOnSecurity Sysmon config
+      ansible.windows.win_get_url:
+        url: https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
+        dest: C:\Tools\Sysmon\sysmonconfig.xml
+
+    - name: Install Sysmon with config
+      ansible.windows.win_command:
+        cmd: C:\Tools\Sysmon\Sysmon64.exe -accepteula -i C:\Tools\Sysmon\sysmonconfig.xml
+      register: sysmon_install
+      failed_when: sysmon_install.rc not in [0, 1]
+
+    - name: Verify Sysmon service is running
+      ansible.windows.win_service:
+        name: Sysmon64
+        state: started
+        start_mode: auto

@@ -1,0 +1,32 @@
+---
+- name: Install Splunk Enterprise
+  hosts: splunk
+  become: true
+  gather_facts: yes
+  tasks:
+    - name: Download Splunk Enterprise deb
+      ansible.builtin.get_url:
+        url: https://download.splunk.com/products/splunk/releases/10.2.0/linux/splunk-10.2.0-d749cb17ea65-linux-amd64.deb
+        dest: /tmp/splunk.deb
+        mode: '0644'
+    - name: Install Splunk Enterprise
+      ansible.builtin.apt:
+        deb: /tmp/splunk.deb
+        state: present
+    - name: Start Splunk and accept license
+      ansible.builtin.command:
+        cmd: /opt/splunk/bin/splunk start --accept-license --answer-yes --seed-passwd LabAdmin2024! --no-prompt
+        creates: /opt/splunk/var/run/splunk/splunkd.pid
+    - name: Enable Splunk boot start
+      ansible.builtin.command:
+        cmd: /opt/splunk/bin/splunk enable boot-start -systemd-managed 1 -user splunk
+    - name: Configure Splunk to receive on port 9997
+      ansible.builtin.command:
+        cmd: /opt/splunk/bin/splunk enable listen 9997 -auth admin:LabAdmin2024!
+    - name: Restart Splunk
+      ansible.builtin.command:
+        cmd: /opt/splunk/bin/splunk restart
+    - name: Clean up installer
+      ansible.builtin.file:
+        path: /tmp/splunk.deb
+        state: absent

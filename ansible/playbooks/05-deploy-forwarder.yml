@@ -1,0 +1,52 @@
+---
+- name: Deploy Splunk Universal Forwarder
+  hosts: windows
+  gather_facts: no
+  vars:
+    splunk_server: 10.0.20.20
+    splunk_port: 9997
+
+  tasks:
+    - name: Download Universal Forwarder MSI
+      ansible.windows.win_get_url:
+        url: https://download.splunk.com/products/universalforwarder/releases/10.2.0/windows/splunkforwarder-10.2.0-d749cb17ea65-windows-x64.msi
+        dest: C:\Tools\splunkforwarder.msi
+
+    - name: Install Universal Forwarder
+      ansible.windows.win_package:
+        path: C:\Tools\splunkforwarder.msi
+        arguments:
+          - AGREETOLICENSE=Yes
+          - RECEIVING_INDEXER={{ splunk_server }}:{{ splunk_port }}
+          - SPLUNKPASSWORD=LabAdmin2024!
+          - /quiet
+        state: present
+
+    - name: Configure Sysmon log input
+      ansible.windows.win_copy:
+        content: |
+          [WinEventLog://Microsoft-Windows-Sysmon/Operational]
+          disabled = false
+          index = main
+          sourcetype = XmlWinEventLog:Microsoft-Windows-Sysmon/Operational
+
+          [WinEventLog://Security]
+          disabled = false
+          index = main
+          sourcetype = WinEventLog:Security
+
+          [WinEventLog://System]
+          disabled = false
+          index = main
+          sourcetype = WinEventLog:System
+
+          [WinEventLog://Application]
+          disabled = false
+          index = main
+          sourcetype = WinEventLog:Application
+        dest: C:\Program Files\SplunkUniversalForwarder\etc\system\local\inputs.conf
+
+    - name: Restart Universal Forwarder service
+      ansible.windows.win_service:
+        name: SplunkForwarder
+        state: restarted

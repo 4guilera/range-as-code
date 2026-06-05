@@ -1,0 +1,19 @@
+---
+- name: Join WS01 to range.lab domain
+  hosts: ws01
+  gather_facts: no
+
+  tasks:
+    - name: Set DNS to DC01
+      ansible.windows.win_dns_client:
+        adapter_names: "*"
+        dns_servers:
+          - 10.0.20.60
+
+    - name: Join range.lab domain
+      microsoft.ad.membership:
+        dns_domain_name: range.lab
+        domain_admin_user: Administrator@range.lab
+        domain_admin_password: LabAdmin2024!
+        state: domain
+        reboot: true
