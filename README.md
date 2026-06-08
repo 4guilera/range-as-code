@@ -68,13 +68,12 @@ Four machines, one network:
 - [x] Splunk Enterprise running on node1
 - [x] Universal Forwarder shipping logs from both Windows hosts to Splunk
 - [x] Sysmon, Security, System, and Application event logs indexed in Splunk
+- [x] Detection-as-code: Sigma rules with CI/CD validation
 
 ## What's next
 
 - [ ] Suricata network sensor on the Splunk VM
-- [ ] Detection-as-code: Sigma rules with CI/CD validation
 - [ ] Purple team loop: ATT&CK technique → attack → detect in Splunk → write rule
-- [ ] Network isolation (dedicated range bridge, controlled routing)
 
 ## Environment
 
