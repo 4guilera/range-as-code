@@ -1,4 +1,4 @@
-# range-as-code
+# Range as Code
 
 A purple team cyber range built as infrastructure-as-code on a Proxmox homelab. I built this using Packer, Terraform, and Ansible.
 
